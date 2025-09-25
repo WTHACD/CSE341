@@ -1,0 +1,56 @@
+Guía Funcional: API de Contactos (CSE341)
+1. Descripción General
+Esta es una API RESTful para gestionar una base de datos de contactos, construida con Node.js, Express y MongoDB. Provee endpoints para operaciones CRUD (Crear, Leer, Actualizar, Eliminar) y cuenta con documentación interactiva a través de Swagger.
+
+2. Tecnologías Utilizadas
+Backend: Node.js, Express.js
+Base de Datos: MongoDB (con mongodb driver)
+Documentación: Swagger (swagger-ui-express, swagger-autogen)
+3. Configuración del Entorno Local
+Para ejecutar este proyecto en una máquina local, sigue estos pasos:
+
+Instalar Dependencias: Abre una terminal en la raíz del proyecto y ejecuta:
+
+npm install
+Crear Archivo de Variables de Entorno:
+
+Crea un archivo llamado .env en la raíz del proyecto.
+Dentro de este archivo, agrega tu cadena de conexión de MongoDB. Debe lucir así:
+MONGODB_URI="mongodb+srv://<tu_usuario>:<tu_password>@<tu_cluster>/?retryWrites=true&w=majority"
+El archivo .gitignore ya está configurado para que .env no se suba a GitHub, protegiendo tus credenciales.
+4. Cómo Ejecutar la Aplicación
+La ejecución requiere dos pasos en orden:
+
+Generar la Documentación Swagger: Este comando lee tus rutas y crea el archivo swagger.json.
+
+node swagger.js
+Iniciar el Servidor: Este comando inicia el servidor Express. Por defecto, correrá en el puerto 3000.
+
+node server.js
+Deberías ver el mensaje: Server is running on port 3000.
+
+5. Endpoints de la API
+Para explorar y probar la API de forma interactiva, una vez que el servidor esté corriendo, ve a:
+
+URL de Documentación: http://localhost:3000/api-docs
+Los endpoints disponibles son:
+
+Método	Ruta	Descripción
+GET	/contacts	Obtiene la lista completa de contactos.
+GET	/contacts/{id}	Obtiene un contacto por su ID.
+POST	/contacts	Crea un nuevo contacto.
+PUT	/contacts/{id}	Actualiza un contacto existente por su ID.
+DELETE	/contacts/{id}	Elimina un contacto por su ID.
+6. Pruebas (Testing)
+Puedes probar los endpoints de dos maneras:
+
+A través de Swagger UI: La interfaz en /api-docs es la forma más sencilla de probar cada endpoint, ya que te guía con los parámetros y cuerpos de petición necesarios.
+Usando el archivo .rest:
+El archivo contacts.rest contiene peticiones de ejemplo para cada endpoint.
+Si usas Visual Studio Code con la extensión REST Client, puedes enviar estas peticiones directamente desde el editor.
+7. Despliegue (Deployment)
+El proyecto está configurado para un despliegue continuo en Render:
+
+Cada vez que se hace un git push a la rama principal (main o master) del repositorio en GitHub, Render automáticamente inicia un nuevo despliegue.
+Render instalará las dependencias (npm install) y luego usará el comando de inicio (probablemente node server.js).
+La documentación de la API estará disponible públicamente en https://tu-app.onrender.com/api-docs.
