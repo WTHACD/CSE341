@@ -1,0 +1,139 @@
+Guía Definitiva para Conectar Node.js a MongoDB
+Paso 1: Preparar el Entorno
+Crear el Proyecto:
+
+Asegúrate de tener una carpeta para tu proyecto con un package.json. Si no lo tienes, puedes crearlo con npm init -y.
+Instalar Dependencias:
+
+Necesitamos express para el servidor, mongodb para la conexión a la base de datos, y dotenv para manejar las claves de forma segura.
+Comando:
+npm install express mongodb dotenv
+Paso 2: Configurar la Conexión a la Base de Datos
+Crear el archivo .env:
+
+En la raíz de tu proyecto, crea un archivo llamado .env. Este archivo guardará tu cadena de conexión secreta.
+Contenido (.env):
+MONGO_URI=mongodb+srv://tu_usuario:tu_contraseña@tu_cluster.mongodb.net/?retryWrites=true&w=majority
+Explicación: Reemplaza tu_usuario, tu_contraseña y tu_cluster con tus datos de MongoDB Atlas.
+Crear el Módulo de Conexión:
+
+Crea una carpeta (por ejemplo, dbase) y dentro un archivo connect.js. Este archivo se encargará de la lógica de conexión.
+Código (dbase/connect.js):
+const { MongoClient } = require('mongodb');
+require('dotenv').config();
+
+let db;
+
+const initDb = (callback) => {
+  if (db) {
+    console.log('Db is already initialized!');
+    return callback(null, db);
+  }
+  MongoClient.connect(process.env.MONGO_URI)
+    .then((client) => {
+      console.log('Successfully connected to MongoDB Atlas!');
+      db = client.db('cse341'); // <-- ¡Importante! El nombre de tu base de datos
+      callback(null, db);
+    })
+    .catch((err) => {
+      console.error('Error connecting to MongoDB Atlas:', err);
+      callback(err);
+    });
+};
+
+const getDb = () => {
+  if (!db) {
+    throw new Error('Db not initialized');
+  }
+  return db;
+};
+
+module.exports = {
+  initDb,
+  getDb,
+};
+Explicación: initDb inicia la conexión usando la MONGO_URI del archivo .env. getDb nos permite acceder a esa conexión desde otras partes de la aplicación. Asegúrate de que client.db('nombre_db') tenga el nombre correcto de tu base de datos.
+Paso 3: Crear el Controlador
+Crear el archivo de Controlador:
+Crea una carpeta controller y dentro un archivo contacts.js. Este archivo contendrá la lógica para manejar las peticiones (qué hacer cuando alguien visita una ruta).
+Código (controller/contacts.js):
+const mongodb = require('../dbase/connect');
+const { ObjectId } = require('mongodb');
+
+const getAll = async (req, res) => {
+    const result = await mongodb.getDb().collection('contacts').find();
+    result.toArray().then((contacts) => {
+        res.setHeader('Content-Type', 'application/json');
+        res.status(200).json(contacts);
+    });
+};
+
+const getSingle = async (req, res) => {
+    const contactId = new ObjectId(req.params.id);
+    const result = await mongodb.getDb().collection('contacts').findOne({ _id: contactId });
+    if (result) {
+        res.setHeader('Content-Type', 'application/json');
+        res.status(200).json(result);
+    } else {
+        res.status(404).json({ message: 'Contact not found' });
+    }
+};
+
+module.exports = { getAll, getSingle };
+Explicación: getAll obtiene todos los documentos de la colección contacts. getSingle busca un solo documento por su _id. Usamos getDb() para obtener la conexión a la base de datos.
+Paso 4: Crear las Rutas
+Crear el archivo de Rutas Específicas:
+
+En tu carpeta routes, crea un archivo contacts.js. Este archivo define las URLs específicas para los contactos.
+Código (routes/contacts.js):
+const express = require('express');
+const router = express.Router();
+const contactsController = require('../controller/contacts');
+
+router.get('/', contactsController.getAll);
+router.get('/:id', contactsController.getSingle);
+
+module.exports = router;
+Explicación: Este archivo le dice a la aplicación que cuando alguien visite / (de los contactos), se debe ejecutar getAll del controlador. Si visitan /:id, se ejecuta getSingle.
+Configurar el Archivo de Rutas Principal:
+
+El archivo routes/index.js es el enrutador principal que distribuye el tráfico.
+Código (routes/index.js):
+const express = require('express');
+const router = express.Router();
+
+router.get('/', (req, res) => {
+    res.send('Welcome to the CSE341-P API');
+});
+
+router.use('/contacts', require('./contacts'));
+
+module.exports = router;
+Explicación: Define una ruta de bienvenida para / y le dice a la aplicación que cualquier URL que empiece con /contacts debe ser manejada por el archivo routes/contacts.js.
+Paso 5: Iniciar el Servidor
+Configurar el Servidor Principal:
+
+Tu archivo server.js une todo y arranca el servidor.
+Código (server.js):
+const express = require('express');
+const app = express();
+const port = process.env.PORT || 3000;
+const mongodb = require('./dbase/connect');
+
+app.use('/', require('./routes'));
+
+mongodb.initDb((err) => {
+    if (err) {
+        console.log(err);
+    } else {
+        app.listen(port, () => {
+            console.log(`Server is running on port ${port}`);
+        });
+    }
+});
+Explicación: Este archivo carga las rutas y, lo más importante, llama a mongodb.initDb() para conectarse a la base de datos antes de empezar a escuchar peticiones.
+Ejecutar:
+
+Abre tu terminal y corre:
+node server.js
+Si todo está correcto, verás el mensaje "Server is running on port 3000".
